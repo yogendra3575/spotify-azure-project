@@ -1,0 +1,18 @@
+{
+	"name": "ls_sql_db",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "Link Service to connect with Azure SQL Database.",
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "db-server-spotify.database.windows.net",
+			"database": "database-spotify",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SQL",
+			"userName": "veera",
+			"encryptedCredential": "ew0KICAiVmVyc2lvbiI6ICIyMDE3LTExLTMwIiwNCiAgIlByb3RlY3Rpb25Nb2RlIjogIktleSIsDQogICJTZWNyZXRDb250ZW50VHlwZSI6ICJQbGFpbnRleHQiLA0KICAiQ3JlZGVudGlhbElkIjogIkRBVEFGQUNUT1JZQDU2MkEyOEFDLTBGMjctNEIxNC04REI1LTMzMTlGREJGRTQyNV8yZTJjODAzNy1kNGNmLTRlYjAtYTFhMy1hMTUzNDlhODI0ZWIiDQp9"
+		}
+	}
+}
