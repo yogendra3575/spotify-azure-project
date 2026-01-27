@@ -1,0 +1,41 @@
+{
+	"name": "ds_bronze_trg",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_data_lake",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"container": {
+				"type": "string"
+			},
+			"folder": {
+				"type": "string"
+			},
+			"name": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().name",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().folder",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().container",
+					"type": "Expression"
+				}
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	}
+}
