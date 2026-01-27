@@ -1,0 +1,33 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "dev-datafactory-spotify"
+		},
+		"ls_data_lake_accountKey": {
+			"value": ""
+		},
+		"ls_sql_db_password": {
+			"value": ""
+		},
+		"ls_data_lake_properties_typeProperties_url": {
+			"value": "https://storagespotifyveera.dfs.core.windows.net/"
+		},
+		"ls_sql_db_properties_typeProperties_server": {
+			"value": "db-server-spotify.database.windows.net"
+		},
+		"ls_sql_db_properties_typeProperties_database": {
+			"value": "database-spotify"
+		},
+		"ls_sql_db_properties_typeProperties_userName": {
+			"value": "veera"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
