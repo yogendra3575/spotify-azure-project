@@ -68,7 +68,7 @@
 					"source": {
 						"type": "AzureSqlSource",
 						"sqlReaderQuery": {
-							"value": "SELECT * FROM\n    @{pipeline().parameters.schema}.@{pipeline().parameters.table}\n    WHERE \n    @{pipeline().parameters.cdc} > '@{activity('Look_updated_date').output.firstRow.cdc}'\n",
+							"value": "SELECT * FROM\n    @{pipeline().parameters.schema}.@{pipeline().parameters.table}\n    WHERE \n    @{pipeline().parameters.cdc} > '@{if(empty(pipeline().parameters.from_date),activity('Look_updated_date').output.firstRow.cdc ,pipeline().parameters.from_date)}'\n",
 							"type": "Expression"
 						},
 						"queryTimeout": "02:00:00",
@@ -126,9 +126,172 @@
 				"typeProperties": {
 					"variableName": "current_date",
 					"value": {
-						"value": "@formatDateTime(utcnow(), 'yyyy-MM-dd')\n",
+						"value": "@formatDateTime(utcnow(), 'yyyy-MM-dd HH:mm:ss')\n",
 						"type": "Expression"
 					}
+				}
+			},
+			{
+				"name": "Date condition",
+				"description": "Does the specific activites based on updated date",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Copy_DB_to_lake",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('Copy_DB_to_lake').output.dataRead, 0)",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "Delete_empty_file",
+							"description": "Deletes the empty file created while copy_DB_to_Lake",
+							"type": "Delete",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "ds_updated_date",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": "bronze",
+										"folder": "users",
+										"file": {
+											"value": "@concat(pipeline().parameters.table,'_',variables('current_date'))",
+											"type": "Expression"
+										}
+									}
+								},
+								"enableLogging": false,
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								}
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "Max_cdc_date",
+							"description": "Retrieving the maximum date from the cdc column",
+							"type": "Script",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"linkedServiceName": {
+								"referenceName": "ls_sql_db",
+								"type": "LinkedServiceReference"
+							},
+							"typeProperties": {
+								"scripts": [
+									{
+										"type": "Query",
+										"text": {
+											"value": "SELECT\n    MAX(@{pipeline().parameters.cdc}) AS max_date\nFROM \n    @{pipeline().parameters.schema}.@{pipeline().parameters.table}",
+											"type": "Expression"
+										}
+									}
+								],
+								"scriptBlockExecutionTimeout": "02:00:00"
+							}
+						},
+						{
+							"name": "Update_cdc_date",
+							"description": "max date in script Max_cdc_date is stored in empty.json by adding new column and then copying it into cdc_udated_date.json",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "Max_cdc_date",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "JsonSource",
+									"additionalColumns": [
+										{
+											"name": "cdc",
+											"value": {
+												"value": "@activity('Max_cdc_date').output.resultSets[0].rows[0].max_date",
+												"type": "Expression"
+											}
+										}
+									],
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "JsonReadSettings"
+									}
+								},
+								"sink": {
+									"type": "JsonSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "JsonWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_updated_date",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": "bronze",
+										"folder": "cdc",
+										"file": "empty.json"
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_updated_date",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": "bronze",
+										"folder": "cdc",
+										"file": "cdc_updated_date.json"
+									}
+								}
+							]
+						}
+					]
 				}
 			}
 		],
@@ -140,6 +303,9 @@
 				"type": "string"
 			},
 			"cdc": {
+				"type": "string"
+			},
+			"from_date": {
 				"type": "string"
 			}
 		},
