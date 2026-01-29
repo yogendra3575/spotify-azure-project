@@ -122,7 +122,10 @@
 									"type": "DatasetReference",
 									"parameters": {
 										"container": "bronze",
-										"folder": "users",
+										"folder": {
+											"value": "@item().table",
+											"type": "Expression"
+										},
 										"name": {
 											"value": "@concat(item().table,'_',variables('current_date'))",
 											"type": "Expression"
